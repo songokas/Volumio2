@@ -171,9 +171,8 @@ function interfaceApi(context) {
                         });
                 }
                 else if(req.query.cmd == "playplaylist"){
-                    var playlistName = req.query.name;
-                    var timeStart = Date.now();
-                    self.logStart('Client requests Volumio Play Playlist '+playlistName)
+                    var playPlaylist = function(name, timeStart) {
+                        self.logStart('Client requests Volumio Play Playlist '+playlistName)
                         .then(function () {
                             return self.commandRouter.playPlaylist.call(self.commandRouter,
                                 playlistName);
@@ -182,6 +181,29 @@ function interfaceApi(context) {
                         .done(function () {
                             res.json({'time':timeStart, 'response':req.query.cmd + " Success"});
                         });
+                    }
+
+                    var playlistName = req.query.name;
+                    var timeStart = Date.now();
+                    var response = self.commandRouter.playListManager.listPlaylist();
+                    response.then(function (data) {
+                        if (!(data.length > 0)) {
+                            res.json({'time':timeStart, 'response':req.query.cmd + " empty playlists"});
+                        }
+                        else if (!playlistName) {
+                            playlistName = data[Math.floor(Math.random() * data.length)];
+                        }
+                        
+                        if (data.indexOf(playlistName) === -1) {
+                            res.json({'time':timeStart, 'response':req.query.cmd + " " + playlistName + " playlist does not exist"});
+                        } else {
+                            playPlaylist(playlistName, timeStart);
+                        }
+                    }).fail(function() {
+                        res.json({'time':timeStart, 'response':req.query.cmd + " failed to retrieve playlist information"});
+                    });
+                    
+   
                 }
                 else if(req.query.cmd=="seek"){
                     var position = req.query.position;
@@ -323,8 +345,6 @@ function interfaceApi(context) {
 
     api.route('/listplaylists')
         .get(function (req, res) {
-
-            var response = self.commandRouter.playListManager.listPlaylist();
 
             var response = self.commandRouter.playListManager.listPlaylist();
             response.then(function (data) {

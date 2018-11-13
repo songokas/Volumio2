@@ -62,7 +62,6 @@ function InterfaceWebUI(context) {
 			});
 
 			connWebSocket.on('addToQueue', function (data) {
-
                  self.commandRouter.addQueueItems(data)
                 .then(function(){
                     var item = data.uri;
@@ -533,8 +532,11 @@ function InterfaceWebUI(context) {
 
 			connWebSocket.on('addToPlaylist', function (data) {
 			    var selfConnWebSocket = this;
-
-                var returnedData = self.commandRouter.playListManager.addToPlaylist(data.name, data.service, data.uri);
+                if (data.copy) {
+                    var returnedData = self.commandRouter.playListManager.copyItem(data.copy, data.name, data.service, data.uri);
+                } else {
+                    var returnedData = self.commandRouter.playListManager.addToPlaylist(data.name, data.service, data.uri, (data.title || null));
+                }
 				returnedData.then(function (data) {
                     var returnedListData = self.commandRouter.playListManager.listPlaylist();
                     returnedListData.then(function (listdata) {
@@ -549,7 +551,7 @@ function InterfaceWebUI(context) {
 			connWebSocket.on('removeFromPlaylist', function (data) {
 				var selfConnWebSocket = this;
 				var playlistname = data.name;
-				var returnedData = self.commandRouter.playListManager.removeFromPlaylist(data.name, 'mpd', data.uri);
+				var returnedData = self.commandRouter.playListManager.removeFromPlaylist(data.name, data.service, data.uri);
 				returnedData.then(function (name) {
 					var response=self.musicLibrary.executeBrowseSource('playlists/'+playlistname);
 					if (response != undefined) {

@@ -108,20 +108,19 @@ PlaylistManager.prototype.getPlaylistContent = function (name) {
 	return self.commonGetPlaylistContent(self.playlistFolder, name);
 };
 
-PlaylistManager.prototype.addToPlaylist = function (name, service, uri) {
+PlaylistManager.prototype.addToPlaylist = function (name, service, uri, title) {
 	var self = this;
 
 	//self.commandRouter.pushConsoleMessage('Adding uri '+uri+' to playlist '+name);
 	self.commandRouter.pushToastMessage('success', self.commandRouter.getI18nString('PLAYLIST.ADDED_TITLE'),
         uri +  self.commandRouter.getI18nString('PLAYLIST.ADDED_TO_PLAYLIST') + name);
-	return self.commonAddToPlaylist(self.playlistFolder, name, service, uri);
+	return self.commonAddToPlaylist(self.playlistFolder, name, service, uri, title);
 };
 
 PlaylistManager.prototype.addItemsToPlaylist = function (name, data) {
     var self = this;
-
-    //self.commandRouter.pushConsoleMessage('Adding uri '+uri+' to playlist '+name);
-    return self.commonAddToPlaylist(self.playlistFolder, name, service, uri);
+    self.commandRouter.pushConsoleMessage('Adding items to playlist');
+    return self.commonAddItemsToPlaylist(self.playlistFolder, name, data);
 };
 
 
@@ -408,7 +407,6 @@ PlaylistManager.prototype.commonAddToPlaylist = function (folder, name, service,
             })
 
 		} else fileDefer.resolve();
-
 		fileDefer.then(function() {
             if (service === 'mpd') {
                 var listingDefer=libQ.defer();
@@ -548,10 +546,15 @@ PlaylistManager.prototype.commonAddToPlaylist = function (folder, name, service,
                         if(!data)
                             data=[];
 
-                        data.push({
-                            service: service, uri: uri, title: title,
-                            icon: 'fa-microphone'
-                        });
+                        var playlistItem = {
+                            service: service,
+                            uri: uri,
+                            title: title,
+                            name: title,
+                            albumart:"/albumart"
+                        };
+
+                        data.push(playlistItem);
 
                         self.saveJSONFile(folder, name, data).then(function(){
                             var favourites = self.commandRouter.checkFavourites({uri: path});
@@ -595,6 +598,34 @@ PlaylistManager.prototype.commonAddToPlaylist = function (folder, name, service,
                     });
 
                 });
+            } else {
+                var promise = self.commandRouter.explodeUriFromService(service,uri);
+                promise.then(function(entries) {
+                    fs.readJson(filePath, function (err, data) {
+                        if (err)
+                            defer.resolve({success: false});
+                        else {
+                            if(!data)
+                                data=[];
+                            
+                            if (entries[0] == null) {
+                                entries = [entries];
+                            }
+
+                            var output = data.concat(entries);
+                                self.saveJSONFile(folder, name, output).then(function(){
+                                    var favourites = self.commandRouter.checkFavourites({uri: path});
+                                    defer.resolve(favourites);
+                                }).fail(function(){
+                                    defer.resolve({success:false});
+                                })
+                            }
+                    });
+                }).fail(function() {
+                    //console.log('failed to parse uri');
+                    defer.resolve({success:false});
+                });
+
             }
         })
 
@@ -800,7 +831,44 @@ PlaylistManager.prototype.listFavourites = function (uri) {
 	return defer.promise;
 };
 
+PlaylistManager.prototype.copyItem = function (fromPlaylist, toPlaylist, service, uri) {
+	var self = this;
 
+	var defer = libQ.defer();
+
+	var writeItem = function(item) {
+        fs.readJson(self.playlistFolder+toPlaylist, function (err, data) {
+            if (err) {
+                defer.resolve({success: false, reason: 'Cannot open playlist for writing'});
+            } 
+            else {
+                var output = data.concat([item]);
+                self.saveJSONFile(self.playlistFolder, toPlaylist, output).then(function() {
+                    var favourites = self.commandRouter.checkFavourites({uri: path});
+                    defer.resolve(favourites);
+                }).fail(function() {
+                    defer.resolve({success:false, reason: 'Unable to save json'});
+                });
+            }
+        });
+	};
+
+	var readPromise = fs.readJson(self.playlistFolder+fromPlaylist, function (err, data) {
+		if (err) {
+			defer.resolve({success: false, reason: 'Cannot open playlist for reading'});
+		}
+		else {
+			for (var i = 0; i < data.length; i++) {
+				if (data[i].service == service && data[i].uri == uri) {
+					return writeItem(data[i]);
+				}
+			}
+            defer.resolve({success:false, reason: 'Item not found'});
+		}
+	});
+
+    return defer.promise;
+}
 
 PlaylistManager.prototype.commonAddItemsToPlaylist = function (folder, name, data) {
     var self = this;

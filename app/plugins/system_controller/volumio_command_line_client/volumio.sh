@@ -31,6 +31,9 @@ next
 previous
 stop
 clear
+lsplaylist
+playlist <name>
+
 
 
 [[VOLUMIO SERVICE CONTROL]]
@@ -99,6 +102,12 @@ sudo /bin/sh /volumio/app/plugins/system_controller/volumio_command_line_client/
 case "$1" in
         play)
             /usr/bin/curl "http://127.0.0.1:3000/api/v1/commands/?cmd=play"
+            ;;
+        lsplaylist)
+            /usr/bin/curl "http://127.0.0.1:3000/api/v1/listplaylists"
+            ;;
+        playlist)
+            /usr/bin/curl "http://127.0.0.1:3000/api/v1/commands/?cmd=playplaylist&name=$2"
             ;;
         toggle)
             /usr/bin/curl "http://127.0.0.1:3000/api/v1/commands/?cmd=toggle"
