@@ -140,7 +140,7 @@ CorePlayQueue.prototype.addQueueItems = function (arrayItems) {
         {
             service=item.service;
 
-            if(service==='webradio' || item.uri.startsWith('cdda:'))
+            if(service==='webradio' || item.uri.startsWith('cdda:') || (service === 'upnp_browser' && !item.uri.startsWith('upnp')))
             {
                 item.name=item.title;
                 if (!item.albumart) {
