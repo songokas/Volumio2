@@ -347,6 +347,8 @@ function interfaceApi(context) {
         .get(function (req, res) {
 
             var response = self.commandRouter.playListManager.listPlaylist();
+
+            var response = self.commandRouter.playListManager.listPlaylist();
             response.then(function (data) {
                 if (data != undefined) {
                     res.json(data);
