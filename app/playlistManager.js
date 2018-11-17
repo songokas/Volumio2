@@ -870,12 +870,12 @@ PlaylistManager.prototype.copyItem = function (fromPlaylist, toPlaylist, service
     return defer.promise;
 }
 
-PlaylistManager.prototype.commonAddItemsToPlaylist = function (folder, name, data) {
+PlaylistManager.prototype.commonAddItemsToPlaylist = function (folder, name, data, currentPlaylist) {
     var self = this;
 
     var defer = libQ.defer();
 
-    var playlist = [];
+    var playlist = currentPlaylist || [];
 
     for(var i in data)
     {
@@ -896,6 +896,28 @@ PlaylistManager.prototype.commonAddItemsToPlaylist = function (folder, name, dat
     })
 
     return defer.promise;
+};
+
+PlaylistManager.prototype.commonAppendItemsToPlaylist = function (folder, name, data) {
+    var self = this;
+    var defer = libQ.defer();
+
+	fs.readJson(folder + name, function (err, items) {
+		if (err) {
+            defer.reject(new Error('Cannot read playlist file'));
+		}
+		else {
+            self.commonAddItemsToPlaylist(folder, name, data, items)
+                .then(function() {
+                    defer.resolve();
+                })
+                .fail(function() {
+                    defer.reject(new Error('Cannot write playlist file'));
+                });
+        }
+    });
+    return defer.promise;
+
 };
 
 PlaylistManager.prototype.sanitizeUri = function (uri) {

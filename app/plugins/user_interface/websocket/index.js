@@ -1316,20 +1316,16 @@ function InterfaceWebUI(context) {
             });
 
 
-
-	connWebSocket.on('saveQueueToPlaylist', function (data) {
+            connWebSocket.on('saveQueueToPlaylist', function (data) {
                 var selfConnWebSocket = this;
-
-		var returnedData = self.commandRouter.volumioSaveQueueToPlaylist(data.name);
+                var returnedData = self.commandRouter.volumioSaveQueueToPlaylist(data.name, data.index);
 
                 if (returnedData != undefined) {
                     returnedData.then(function (data) {
                         selfConnWebSocket.emit('pushSaveQueueToPlaylist', data);
-		    });
+                    });
                 }
                 else self.logger.error("Error on saving queue to playlist");
-
-
             });
 
             connWebSocket.on('setConsume', function (data) {

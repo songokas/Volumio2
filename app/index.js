@@ -1521,12 +1521,17 @@ CoreCommandRouter.prototype.volumioFFWDRew = function (millisecs) {
 
 
 
-CoreCommandRouter.prototype.volumioSaveQueueToPlaylist = function (name) {
+CoreCommandRouter.prototype.volumioSaveQueueToPlaylist = function (name, index) {
 	var self=this;
     this.pushConsoleMessage('CoreCommandRouter::volumioSaveQueueToPlaylist');
 
 	var queueArray=this.stateMachine.getQueue();
-	var defer=this.playListManager.commonAddItemsToPlaylist(this.playListManager.playlistFolder,name,queueArray);
+	if (index && queueArray[index]) {
+		queueArray = [queueArray[index]];
+		var defer=this.playListManager.commonAppendItemsToPlaylist(this.playListManager.playlistFolder, name, queueArray);
+	} else {
+		var defer=this.playListManager.commonAddItemsToPlaylist(this.playListManager.playlistFolder, name, queueArray);
+	}
 
     defer.then(function()
     {
