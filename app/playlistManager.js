@@ -712,21 +712,20 @@ PlaylistManager.prototype.commonPlayPlaylist = function (folder, name) {
 
 					var uris = [];
 					for (var i in data) {
-						var uri;
-						var fullUri = S(data[i].uri);
+                        var service = data[i].service, uri = data[i].uri, fullUri = S(uri);
+
+                        if (service === undefined) {
+                            service='mpd';
+                        }
+                        else if (service === 'upnp_browser' && !fullUri.startsWith('upnp')) {
+                            uris.push(data[i]);
+                            continue;
+                        }
+
 
 						if (fullUri.startsWith('music-library')) {
 							uri = fullUri.chompLeft('music-library/').s;
-						} /*else if (fullUri.startsWith('/')) {
-							uri = fullUri.chompLeft('/').s;
-						}*/ else uri = data[i].uri;
-
-
-                        var service;
-
-                        if(data[i].service===undefined)
-                            service='mpd';
-                        else service=data[i].service;
+						}
 
 						uris.push({uri:uri,service:service});
 					}
